@@ -3,53 +3,92 @@ import * as path from "node:path";
 
 const filePath = path.resolve(import.meta.dirname!, "./input.txt");
 const fileContents = await readFile(filePath, { encoding: "utf8" });
+let count = 0;
 
-const leftList: number[] = [];
-const rightList: number[] = [];
+enum ListType {
+  SAFE = "safe",
+  UNSAFE = "unsafe",
+}
+interface ListItem {
+  type: ListType;
+  values: number[];
+}
 
-fileContents
+const firstlevels: ListItem[] = fileContents
   .trim()
   .split("\n")
-  .forEach((row: string) => {
-    const values = row.split(" ").filter((c) => c !== "");
+  .map((row: string) => ({
+    type: ListType.SAFE,  // Initial type can be set as SAFE.
+    values: row
+      .split(" ")
+      .filter((c) => c !== "")
+      .map(Number),
+  }));
 
-    leftList.push(Number(values[0]));
-    rightList.push(Number(values[1]));
-  });
-
-const compareAsc = (a: number, b: number) => a - b;
-const leftListSorted = leftList.toSorted(compareAsc);
-const rightListSorted = rightList.toSorted(compareAsc);
-
-//console.log('leftListSorted', leftListSorted);
-//console.log('rightListSorted', rightListSorted);
-
-const result = leftListSorted
-  .map((value, index) => Math.abs(value - rightListSorted[index]))
-  .reduce((acc, prev) => acc + prev, 0);
-
-console.log(`Total distance between lists: ${result}`);
-
-const rightListOccurences: Record<number, number> = {};
-
-rightList.forEach((number) => {
- // console.log('rightList', number);
-  if (rightListOccurences[number] === undefined) {
-    rightListOccurences[number] = 0;
-  }
-
-  rightListOccurences[number] += 1;
-});
-
-const similarityScore = leftList
-  .map((number) => {
-   // console.log('similarityScore', number);
-    if (rightListOccurences[number] !== undefined) {
-      return number * rightListOccurences[number];
+const isPairHaveOrder = (pairs: number[]): boolean => {
+  let isIncreasing = true;
+  let isDecreasing = true;
+  for (let i = 0; i < pairs.length - 1; i++) {
+    if (pairs[i] < pairs[i + 1]) {
+      isDecreasing = false;
     }
+    if (pairs[i] > pairs[i + 1]) {
+      isIncreasing = false;
+    }
+    if (pairs[i] === pairs[i + 1]) {
+      isDecreasing = false;
+      isIncreasing = false;
+    }
+  }
+  return isDecreasing || isIncreasing;
+};
+const checkDifference = (arr: number[]): ListType => {
+  const pairs = arr.flatMap((num, i) => {
+    let diff = 0;
+    if (i + 1 < arr.length) {
+      diff = Math.abs(num - arr[i + 1]);
+    }
+    return diff;
+  });
+  return pairs.some((diff) => diff > 3)
+    ? ListType.UNSAFE
+    : isPairHaveOrder(arr)
+    ? ListType.SAFE
+    : ListType.UNSAFE;
+};
 
-    return 0;
-  })
-  .reduce((acc, prev) => acc + prev, 0);
+const result = firstlevels.map((val) => {
+  return {
+    ...val,
+    type: checkDifference(val.values),
+  };
+}).filter(value => value.type === ListType.SAFE).length;
 
-console.log(`Similarity score: ${similarityScore}`);
+console.log(result)
+
+
+
+/**Second */
+
+const levels: number[][] = fileContents
+  .trim()
+  .split("\n")
+  .map((row: string) => row
+      .split(" ")
+      .filter((c) => c !== "")
+      .map(Number),
+  );
+function safe(levels: number[]): boolean {
+  return checkDifference(levels) === ListType.SAFE;
+}
+for(const level of levels) {
+  if (level.length > 1 && level.some((_, index) => {
+    const modifiedLevels = [...level.slice(0, index), ...level.slice(index + 1)];
+    return safe(modifiedLevels);
+  })) {
+    count++;
+  }
+}
+
+
+console.log(count);
