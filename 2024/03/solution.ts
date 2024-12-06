@@ -3,7 +3,6 @@ import * as path from "node:path";
 
 const filePath = path.resolve(import.meta.dirname!, "./input.txt");
 const fileContents = await readFile(filePath, { encoding: "utf8" });
-let count = 0;
 
 function calculateSumOfMultiplications(input: string): number {
   // Regular expression to match valid mul expressions (mul(X, Y) where X and Y are integers)
